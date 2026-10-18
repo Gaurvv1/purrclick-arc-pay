@@ -28,6 +28,10 @@ node_modules/.tmp/
 *.log
 /tmp/
 
+# Arc Studio runtime traces (local only)
+traces.jsonl
+console.jsonl
+
 # OS
 .DS_Store
 Thumbs.db
