@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment — never commit real values
+.env
+.env.local
+.env.*.local
+
+# Circle credentials & recovery files
+.circle/
+**/recovery_file*.dat
+**/entity_secret*
+
+# Build output
+dist/
+contracts/out/
+contracts/cache/
+
+# Foundry artifacts (reproducible from source)
+cache/
+out/
+
+# Vite / TypeScript caches
+node_modules/.vite/
+node_modules/.tmp/
+
+# Debug logs
+*.log
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
