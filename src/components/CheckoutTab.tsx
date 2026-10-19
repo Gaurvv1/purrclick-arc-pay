@@ -436,6 +436,9 @@ export default function CheckoutTab() {
           <p className="text-center text-xs" style={{ color: 'var(--subtle)' }}>
             Paid on-chain · no refunds · licence delivered by email
           </p>
+          <p className="text-center text-xs" style={{ color: 'var(--subtle)' }}>
+            After paying in USDC you'll complete a $0 Polar checkout to receive your key.
+          </p>
           <p className="text-center text-xs">
             <a
               href="https://polar.sh/purrclick/portal"
@@ -492,6 +495,9 @@ function LicenceBlock({
   if (licence.status === 'success') {
     return (
       <div className="space-y-2">
+        <p className="text-xs" style={{ color: 'var(--ink-2)' }}>
+          Your USDC payment is done. The next page is a $0 Polar checkout, only used to deliver your licence key to your email. You will not be charged again.
+        </p>
         <a
           href={licence.checkoutUrl}
           target="_blank"
