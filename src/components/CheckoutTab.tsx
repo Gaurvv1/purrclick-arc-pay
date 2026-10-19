@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   useAccount,
   useReadContract,
@@ -8,7 +8,7 @@ import {
 } from 'wagmi'
 import { erc20Abi } from 'viem'
 import { ConnectKitButton } from 'connectkit'
-import { ExternalLink, Loader2, CheckCircle2, AlertCircle, Mail } from 'lucide-react'
+import { ExternalLink, Loader2, CheckCircle2, AlertCircle, Mail, RefreshCw } from 'lucide-react'
 import { TokenUSDC, NetworkArc } from '@web3icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Amount, usdcDecimalsFor } from '@/onchain-money'
@@ -29,7 +29,40 @@ const inner: React.CSSProperties = {
   borderRadius: '12px',
 }
 
+const LS_KEY = 'purrclick_pending_licence'
+
 type Step = 'idle' | 'approving' | 'approved' | 'buying' | 'done'
+type LicenceState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; checkoutUrl: string }
+  | { status: 'error'; message: string }
+
+interface LicencePayload {
+  txHash: string
+  orderId: string
+  email: string
+  ts: number
+}
+
+async function postLicence(payload: LicencePayload): Promise<{ checkout_url: string }> {
+  const res = await fetch(LICENCE_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const json = await res.json() as Record<string, unknown>
+  if (!res.ok) {
+    const msg = typeof json['error'] === 'string' ? json['error']
+      : typeof json['message'] === 'string' ? json['message']
+      : 'Something went wrong. Please try again.'
+    throw new Error(msg)
+  }
+  if (typeof json['checkout_url'] !== 'string') {
+    throw new Error('Unexpected response from licence server.')
+  }
+  return { checkout_url: json['checkout_url'] }
+}
 
 export default function CheckoutTab() {
   const { address, isConnected, chainId } = useAccount()
@@ -41,7 +74,8 @@ export default function CheckoutTab() {
   const [step, setStep] = useState<Step>('idle')
   const [manualError, setManualError] = useState<string | null>(null)
   const [orderIdHex, setOrderIdHex] = useState<`0x${string}` | null>(null)
-  const [licencePosted, setLicencePosted] = useState(false)
+  const [ts, setTs] = useState<number | null>(null)
+  const [licence, setLicence] = useState<LicenceState>({ status: 'idle' })
 
   // ── Live price from contract ────────────────────────────────────────────────
   const { data: priceRaw } = useReadContract({
@@ -107,22 +141,33 @@ export default function CheckoutTab() {
   const { isLoading: isBuyConfirming, isSuccess: isBuySuccess } =
     useWaitForTransactionReceipt({ hash: buyHash })
 
+  // ── Licence POST ─────────────────────────────────────────────────────────────
+  const requestLicence = useCallback((payload: LicencePayload) => {
+    if (!LICENCE_API_URL) return
+    setLicence({ status: 'loading' })
+    postLicence(payload)
+      .then(({ checkout_url }) => {
+        setLicence({ status: 'success', checkoutUrl: checkout_url })
+        localStorage.removeItem(LS_KEY)
+      })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : 'Something went wrong. Please try again.'
+        setLicence({ status: 'error', message: msg })
+      })
+  }, [])
+
   // Advance step when approve confirms
   if (isApproveSuccess && step === 'approving') {
     void refetchAllowance()
     setStep('approved')
   }
-  // Advance step when buy confirms, and post licence
-  if (isBuySuccess && step === 'buying') {
+
+  // Advance step when buy confirms — save to localStorage then POST
+  if (isBuySuccess && step === 'buying' && buyHash && orderIdHex && ts !== null) {
     setStep('done')
-    if (buyHash && orderIdHex && !licencePosted && LICENCE_API_URL) {
-      setLicencePosted(true)
-      void fetch(LICENCE_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txHash: buyHash, orderId: orderIdHex, email }),
-      })
-    }
+    const payload: LicencePayload = { txHash: buyHash, orderId: orderIdHex, email, ts }
+    try { localStorage.setItem(LS_KEY, JSON.stringify(payload)) } catch { /* ignore */ }
+    requestLicence(payload)
   }
 
   const txError = manualError
@@ -155,9 +200,10 @@ export default function CheckoutTab() {
     if (!validateEmail(email)) return
     setManualError(null)
     resetBuy()
-    const ts = Date.now()
-    makeOrderId(email, ts).then((oid) => {
+    const nowTs = Date.now()
+    makeOrderId(email, nowTs).then((oid) => {
       setOrderIdHex(oid)
+      setTs(nowTs)
       setStep('buying')
       buy({
         address: PURRCLICK_PAY.address,
@@ -288,7 +334,7 @@ export default function CheckoutTab() {
             </div>
           )}
 
-          {/* Error */}
+          {/* Tx error */}
           <AnimatePresence>
             {txError && (
               <motion.div
@@ -326,13 +372,13 @@ export default function CheckoutTab() {
             </div>
           )}
 
-          {/* Success receipt */}
+          {/* Success receipt + licence block */}
           <AnimatePresence>
             {activeStep === 'done' && explorerUrl && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.97 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="px-4 py-4 space-y-2.5"
+                className="px-4 py-4 space-y-3"
                 style={{
                   background: 'rgba(62,207,114,0.07)',
                   border: '1px solid rgba(62,207,114,0.18)',
@@ -343,9 +389,20 @@ export default function CheckoutTab() {
                   <CheckCircle2 className="size-4 shrink-0" style={{ color: 'var(--success)' }} />
                   <span className="text-sm font-semibold" style={{ color: 'var(--success)' }}>Payment confirmed</span>
                 </div>
-                <p className="text-sm" style={{ color: 'var(--ink-2)' }}>
-                  Your licence key is on its way to <strong style={{ color: 'var(--ink)' }}>{email}</strong>.
-                </p>
+
+                {/* Licence state */}
+                {LICENCE_API_URL ? (
+                  <LicenceBlock
+                    licence={licence}
+                    email={email}
+                    onRetry={() => {
+                      if (buyHash && orderIdHex && ts !== null) {
+                        requestLicence({ txHash: buyHash, orderId: orderIdHex, email, ts })
+                      }
+                    }}
+                  />
+                ) : null}
+
                 <a
                   href={explorerUrl}
                   target="_blank"
@@ -383,6 +440,96 @@ export default function CheckoutTab() {
       </div>
     </div>
   )
+}
+
+// ── LicenceBlock ───────────────────────────────────────────────────────────────
+
+function LicenceBlock({
+  licence,
+  email,
+  onRetry,
+}: {
+  licence: LicenceState
+  email: string
+  onRetry: () => void
+}) {
+  const btnBase: React.CSSProperties = {
+    width: '100%',
+    borderRadius: '12px',
+    padding: '12px 18px',
+    fontSize: '14px',
+    fontWeight: 600,
+    fontFamily: "'DM Sans', sans-serif",
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    lineHeight: 1,
+    transition: 'opacity 0.15s',
+  }
+
+  if (licence.status === 'loading') {
+    return (
+      <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--ink-2)' }}>
+        <Loader2 className="size-4 animate-spin shrink-0" style={{ color: 'var(--success)' }} />
+        Preparing your licence…
+      </div>
+    )
+  }
+
+  if (licence.status === 'success') {
+    return (
+      <div className="space-y-2">
+        <a
+          href={licence.checkoutUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            ...btnBase,
+            background: '#e8e8ec',
+            color: '#18181d',
+            textDecoration: 'none',
+          }}
+        >
+          Get your licence <ExternalLink className="size-4" />
+        </a>
+        <p className="text-xs text-center" style={{ color: 'var(--ink-2)' }}>
+          Your licence key will be emailed to{' '}
+          <strong style={{ color: 'var(--ink)' }}>{email}</strong>{' '}
+          after you complete the free checkout.
+        </p>
+      </div>
+    )
+  }
+
+  if (licence.status === 'error') {
+    return (
+      <div className="space-y-2">
+        <div
+          className="flex items-start gap-2 px-3 py-2.5 text-xs"
+          style={{
+            background: 'rgba(240,96,128,0.09)',
+            border: '1px solid rgba(240,96,128,0.22)',
+            borderRadius: '10px',
+            color: 'var(--danger)',
+          }}
+        >
+          <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
+          <span>{licence.message}</span>
+        </div>
+        <button
+          onClick={onRetry}
+          style={{ ...btnBase, background: 'rgba(255,255,255,0.08)', color: 'var(--ink-2)', border: '1px solid var(--border)' }}
+        >
+          <RefreshCw className="size-4" /> Try again
+        </button>
+      </div>
+    )
+  }
+
+  return null
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -443,16 +590,8 @@ function CTAButton({
     gap: '8px',
     lineHeight: 1,
   }
-  const primaryBtn: React.CSSProperties = {
-    ...btnBase,
-    background: '#e8e8ec',
-    color: '#18181d',
-  }
-  const disabledBtn: React.CSSProperties = {
-    ...primaryBtn,
-    opacity: 0.4,
-    cursor: 'not-allowed',
-  }
+  const primaryBtn: React.CSSProperties = { ...btnBase, background: '#e8e8ec', color: '#18181d' }
+  const disabledBtn: React.CSSProperties = { ...primaryBtn, opacity: 0.4, cursor: 'not-allowed' }
 
   if (!isConnected) {
     return (
@@ -463,11 +602,7 @@ function CTAButton({
   }
   if (wrongChain) {
     return (
-      <button
-        onClick={onSwitch}
-        disabled={isSwitching}
-        style={isSwitching ? disabledBtn : primaryBtn}
-      >
+      <button onClick={onSwitch} disabled={isSwitching} style={isSwitching ? disabledBtn : primaryBtn}>
         {isSwitching
           ? <><Loader2 className="size-4 animate-spin" /> Switching…</>
           : 'Switch to Arc'}
