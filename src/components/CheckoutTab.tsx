@@ -436,6 +436,16 @@ export default function CheckoutTab() {
           <p className="text-center text-xs" style={{ color: 'var(--subtle)' }}>
             Paid on-chain · no refunds · licence delivered by email
           </p>
+          <p className="text-center text-xs">
+            <a
+              href="https://polar.sh/purrclick/portal"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: 'var(--subtle)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
+            >
+              Already paid? Get your key
+            </a>
+          </p>
         </div>
       </div>
     </div>
