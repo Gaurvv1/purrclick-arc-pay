@@ -21,7 +21,14 @@ A second tab, **Earn with Purrclick**, lets anyone become a referrer: copy your 
 
 ## Smart contract: PurrclickPay
 
-**Deployed on Arc Testnet:** `0xb35bf640a2cdf26a76a6a022a9f523d2259f5546`
+**Deployed on Arc Mainnet:** `0xDF7027B92b85e65E258941fC283db199343cBb85`
+Explorer: https://explorer.arc.io/address/0xDF7027B92b85e65E258941fC283db199343cBb85
+
+Owner + treasury: `0x9cb6f9a2c322167bd1d912ceccad948a2b2e551c`
+USDC: `0x3600000000000000000000000000000000000000`
+Compiler: Solidity 0.8.28, EVM Paris, optimizer 200 runs, OpenZeppelin 5.1.0
+
+**Testnet (history):** `0xb35bf640a2cdf26a76a6a022a9f523d2259f5546` on Arc Testnet
 
 | Function | Who | Description |
 |---|---|---|
@@ -41,7 +48,7 @@ No admin function can touch buyers' funds. Funds never sit in the contract — e
 
 | Layer | Technology |
 |---|---|
-| Blockchain | [Arc Testnet](https://arc.io) (USDC as native gas) |
+| Blockchain | [Arc Mainnet](https://arc.io) (USDC as native gas) |
 | Smart contract | Solidity 0.8.20, OpenZeppelin Ownable + Pausable |
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS |
 | Onchain hooks | wagmi v2, viem, ConnectKit |
@@ -89,7 +96,7 @@ bun install
 Copy `.env.example` to `.env` and fill in:
 
 ```env
-VITE_PURRCLICK_CONTRACT=0xb35bf640a2cdf26a76a6a022a9f523d2259f5546
+VITE_PURRCLICK_CONTRACT=0xDF7027B92b85e65E258941fC283db199343cBb85
 VITE_LICENCE_API_URL=https://your-licence-endpoint.com/licences
 ```
 
@@ -139,7 +146,7 @@ price         uint256   Price in USDC (6 decimals), e.g. 3000000 = $3.00
 usdc          address   USDC token address on the target chain
 ```
 
-Arc Testnet USDC: `0x3600000000000000000000000000000000000000`
+Arc USDC (mainnet and testnet): `0x3600000000000000000000000000000000000000`
 
 ---
 

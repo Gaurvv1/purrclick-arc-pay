@@ -13,7 +13,7 @@ import { TokenUSDC, NetworkArc } from '@web3icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Amount, usdcDecimalsFor } from '@/onchain-money'
 import { buildTxExplorerUrl } from '@/onchain-facts'
-import { PURRCLICK_PAY, USDC, LICENCE_API_URL, ARC_TESTNET_CHAIN_ID } from '@/lib/purrclick-contract'
+import { PURRCLICK_PAY, USDC, LICENCE_API_URL, ACTIVE_CHAIN_ID } from '@/lib/purrclick-contract'
 import { makeOrderId, parseOnchainError } from '@/lib/utils'
 
 const card: React.CSSProperties = {
@@ -34,7 +34,7 @@ type Step = 'idle' | 'approving' | 'approved' | 'buying' | 'done'
 export default function CheckoutTab() {
   const { address, isConnected, chainId } = useAccount()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
-  const wrongChain = isConnected && chainId !== ARC_TESTNET_CHAIN_ID
+  const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
 
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -48,11 +48,11 @@ export default function CheckoutTab() {
     address: PURRCLICK_PAY.address,
     abi: PURRCLICK_PAY.abi,
     functionName: 'price',
-    chainId: ARC_TESTNET_CHAIN_ID,
+    chainId: ACTIVE_CHAIN_ID,
   })
 
   const priceFormatted = priceRaw != null
-    ? Amount.fromRaw(priceRaw as bigint, usdcDecimalsFor(ARC_TESTNET_CHAIN_ID)).toFixed(2)
+    ? Amount.fromRaw(priceRaw as bigint, usdcDecimalsFor(ACTIVE_CHAIN_ID)).toFixed(2)
     : '...'
 
   // ── USDC balance ────────────────────────────────────────────────────────────
@@ -61,11 +61,11 @@ export default function CheckoutTab() {
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    chainId: ARC_TESTNET_CHAIN_ID,
+    chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!address },
   })
   const balanceFormatted = balanceRaw != null
-    ? Amount.fromRaw(balanceRaw, usdcDecimalsFor(ARC_TESTNET_CHAIN_ID)).toFixed(2)
+    ? Amount.fromRaw(balanceRaw, usdcDecimalsFor(ACTIVE_CHAIN_ID)).toFixed(2)
     : null
 
   // ── Allowance ───────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ export default function CheckoutTab() {
     abi: erc20Abi,
     functionName: 'allowance',
     args: address && PURRCLICK_PAY.address ? [address, PURRCLICK_PAY.address] : undefined,
-    chainId: ARC_TESTNET_CHAIN_ID,
+    chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!address && !!PURRCLICK_PAY.address },
   })
   const hasAllowance = priceRaw != null && allowanceRaw != null
@@ -180,7 +180,7 @@ export default function CheckoutTab() {
     : 'idle'
 
   const explorerUrl = buyHash
-    ? buildTxExplorerUrl(ARC_TESTNET_CHAIN_ID, buyHash)
+    ? buildTxExplorerUrl(ACTIVE_CHAIN_ID, buyHash)
     : null
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -364,7 +364,7 @@ export default function CheckoutTab() {
             isConnected={isConnected}
             wrongChain={wrongChain}
             isSwitching={isSwitching}
-            onSwitch={() => switchChain({ chainId: ARC_TESTNET_CHAIN_ID })}
+            onSwitch={() => switchChain({ chainId: ACTIVE_CHAIN_ID })}
             activeStep={activeStep}
             hasAllowance={hasAllowance}
             priceFormatted={priceFormatted}

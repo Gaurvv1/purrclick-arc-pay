@@ -5,7 +5,7 @@ import { Copy, Check, ExternalLink, Users } from 'lucide-react'
 import { TokenUSDC } from '@web3icons/react'
 import { parseAbiItem } from 'viem'
 import { Amount, usdcDecimalsFor } from '@/onchain-money'
-import { PURRCLICK_PAY, ARC_TESTNET_CHAIN_ID } from '@/lib/purrclick-contract'
+import { PURRCLICK_PAY, ACTIVE_CHAIN_ID } from '@/lib/purrclick-contract'
 import { formatAddress } from '@/lib/utils'
 
 const card: React.CSSProperties = {
@@ -27,8 +27,8 @@ const PAID_EVENT = parseAbiItem(
 
 export default function ReferralTab() {
   const { address, isConnected, chainId } = useAccount()
-  const wrongChain = isConnected && chainId !== ARC_TESTNET_CHAIN_ID
-  const publicClient = usePublicClient({ chainId: ARC_TESTNET_CHAIN_ID })
+  const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
+  const publicClient = usePublicClient({ chainId: ACTIVE_CHAIN_ID })
 
   const [copied, setCopied] = useState(false)
   const [earnings, setEarnings] = useState<bigint | null>(null)
@@ -87,7 +87,7 @@ export default function ReferralTab() {
   }, [address, publicClient, wrongChain])
 
   const earningsFormatted = earnings != null
-    ? Amount.fromRaw(earnings, usdcDecimalsFor(ARC_TESTNET_CHAIN_ID)).toFixed(2)
+    ? Amount.fromRaw(earnings, usdcDecimalsFor(ACTIVE_CHAIN_ID)).toFixed(2)
     : null
 
   return (
