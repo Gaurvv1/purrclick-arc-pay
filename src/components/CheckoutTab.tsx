@@ -282,7 +282,7 @@ export default function CheckoutTab() {
                 <span className="text-xs" style={{ color: 'var(--muted)' }}>Network</span>
                 <div className="flex items-center gap-1.5">
                   <NetworkArc variant="branded" size={13} />
-                  <span className="text-xs font-medium" style={{ color: 'var(--ink-2)' }}>Arc Testnet</span>
+                  <span className="text-xs font-medium" style={{ color: 'var(--ink-2)' }}>Arc</span>
                 </div>
               </div>
             </div>
@@ -470,7 +470,7 @@ function CTAButton({
       >
         {isSwitching
           ? <><Loader2 className="size-4 animate-spin" /> Switching…</>
-          : 'Switch to Arc Testnet'}
+          : 'Switch to Arc'}
       </button>
     )
   }

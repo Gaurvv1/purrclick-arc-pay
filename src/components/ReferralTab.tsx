@@ -121,7 +121,7 @@ export default function ReferralTab() {
         </div>
       ) : wrongChain ? (
         <div className="px-5 py-5 text-center" style={card}>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>Switch to Arc Testnet to see your earnings.</p>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>Switch to Arc to see your earnings.</p>
         </div>
       ) : (
         <>
@@ -186,7 +186,7 @@ export default function ReferralTab() {
                 </span>
               </div>
               <a
-                href={`https://explorer.testnet.arc.io/address/${PURRCLICK_PAY.address}`}
+                href={`https://explorer.arc.io/address/${PURRCLICK_PAY.address}`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-xs"
